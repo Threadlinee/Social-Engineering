@@ -7,7 +7,7 @@ import sys
 from datetime import datetime
 from flask import Flask, request, render_template, jsonify
 
-NGROK_AUTH_TOKEN = "2kvsTq98QwTBvXUKy72hcbgX9WR_5bAbjfCLZW5RijW1MzAZ8"
+NGROK_AUTH_TOKEN = "2xYj1oYy7eEiF4DZi3a9iZqcYSc_7KpfhVbnc28ESPx4Qg4n8"
 NGROK_PATH = "ngrok.exe" if os.path.exists("ngrok.exe") else "ngrok"
 FLASK_PORT = 5000
 
