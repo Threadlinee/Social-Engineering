@@ -57,13 +57,15 @@ def start_ngrok(port):
         print("[!] Please place ngrok.exe in the same folder as this script.")
         return None, None
 
-    # Kill any existing ngrok processes
+    # Kill any existing ngrok processes more thoroughly
+    print("[+] Cleaning up any existing ngrok processes...")
     if os.name == 'nt':  # Windows
         os.system('taskkill /f /im ngrok.exe 2>nul')
+        os.system('taskkill /f /im ngrok.exe 2>nul')  # Run twice to ensure it's killed
     else:  # Unix/Linux
-        os.system('pkill ngrok 2>/dev/null')
+        os.system('pkill -9 ngrok 2>/dev/null')
     
-    time.sleep(1)  # Wait for process to be killed
+    time.sleep(2)  # Wait longer for process to be killed
     
     # Verify ngrok is executable
     try:
@@ -71,6 +73,12 @@ def start_ngrok(port):
     except Exception as e:
         print(f"[!] Error: Cannot execute ngrok: {str(e)}")
         return None, None
+
+    # Kill any existing tunnels
+    try:
+        subprocess.run([NGROK_PATH, "kill"], check=True, capture_output=True)
+    except:
+        pass  # Ignore errors here as it might not be running
 
     ngrok_cmd = [NGROK_PATH, "http", str(port)]
     print(f"[+] Launching ngrok tunnel on port {port} ...")
@@ -92,6 +100,11 @@ def start_ngrok(port):
             stdout, stderr = ngrok_proc.communicate()
             print(f"[!] Ngrok process failed to start!")
             print(f"[!] Error output: {stderr}")
+            print("\n[!] Please try these steps:")
+            print("1. Close any other ngrok windows or processes")
+            print("2. Go to https://dashboard.ngrok.com/agents")
+            print("3. Kill any existing sessions")
+            print("4. Run this script again")
             return None, None
 
         public_url = None
