@@ -7,7 +7,7 @@ import sys
 from datetime import datetime
 from flask import Flask, request, render_template, jsonify
 
-NGROK_AUTH_TOKEN = "2kvsTq98QwTBvXUKy72hcbgX9WR_5bAbjfCLZW5RijW1MzAZ8"
+NGROK_AUTH_TOKEN = "2xYj1oYy7eEiF4DZi3a9iZqcYSc_7KpfhVbnc28ESPx4Qg4n8"
 NGROK_PATH = "ngrok.exe" if os.path.exists("ngrok.exe") else "ngrok"
 FLASK_PORT = 5000
 
@@ -57,26 +57,61 @@ def start_ngrok(port):
         print("[!] Please place ngrok.exe in the same folder as this script.")
         return None, None
 
+    # Kill any existing ngrok processes more thoroughly
+    print("[+] Cleaning up any existing ngrok processes...")
+    if os.name == 'nt':  # Windows
+        os.system('taskkill /f /im ngrok.exe 2>nul')
+        os.system('taskkill /f /im ngrok.exe 2>nul')  # Run twice to ensure it's killed
+    else:  # Unix/Linux
+        os.system('pkill -9 ngrok 2>/dev/null')
+    
+    time.sleep(2)  # Wait longer for process to be killed
+    
+    # Verify ngrok is executable
+    try:
+        subprocess.run([NGROK_PATH, "version"], check=True, capture_output=True)
+    except Exception as e:
+        print(f"[!] Error: Cannot execute ngrok: {str(e)}")
+        return None, None
+
+    # Kill any existing tunnels
+    try:
+        subprocess.run([NGROK_PATH, "kill"], check=True, capture_output=True)
+    except:
+        pass  # Ignore errors here as it might not be running
+
     ngrok_cmd = [NGROK_PATH, "http", str(port)]
     print(f"[+] Launching ngrok tunnel on port {port} ...")
     
     try:
-        # Kill any existing ngrok processes
-        if os.name == 'nt':  # Windows
-            os.system('taskkill /f /im ngrok.exe 2>nul')
-        else:  # Unix/Linux
-            os.system('pkill ngrok 2>/dev/null')
+        # Start ngrok with full output capture
+        ngrok_proc = subprocess.Popen(
+            ngrok_cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
         
-        time.sleep(1)  # Wait for process to be killed
-        
-        ngrok_proc = subprocess.Popen(ngrok_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         print("[+] Waiting for ngrok tunnel to initialize...")
         time.sleep(5)  # Give ngrok more time to start
 
+        # Check if process is still running
+        if ngrok_proc.poll() is not None:
+            stdout, stderr = ngrok_proc.communicate()
+            print(f"[!] Ngrok process failed to start!")
+            print(f"[!] Error output: {stderr}")
+            print("\n[!] Please try these steps:")
+            print("1. Close any other ngrok windows or processes")
+            print("2. Go to https://dashboard.ngrok.com/agents")
+            print("3. Kill any existing sessions")
+            print("4. Run this script again")
+            return None, None
+
         public_url = None
-        for _ in range(30):  # Increased wait time and attempts
+        for attempt in range(30):
             try:
-                resp = requests.get("http://127.0.0.1:4040/api/tunnels")
+                # Try to get the tunnel info
+                resp = requests.get("http://127.0.0.1:4040/api/tunnels", timeout=5)
                 if resp.status_code == 200:
                     tunnels = resp.json().get("tunnels", [])
                     for t in tunnels:
@@ -85,9 +120,10 @@ def start_ngrok(port):
                             break
                     if public_url:
                         break
-            except Exception as e:
-                print(f"[!] Waiting for ngrok... ({_+1}/30)")
-                time.sleep(1)
+                print(f"[!] Waiting for ngrok... ({attempt+1}/30)")
+            except requests.exceptions.RequestException as e:
+                print(f"[!] Connection attempt {attempt+1}/30 failed: {str(e)}")
+            time.sleep(1)
 
         if public_url:
             print(f"[+] Public ngrok URL: {public_url}")
