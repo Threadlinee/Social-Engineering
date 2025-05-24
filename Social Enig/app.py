@@ -57,26 +57,48 @@ def start_ngrok(port):
         print("[!] Please place ngrok.exe in the same folder as this script.")
         return None, None
 
+    # Kill any existing ngrok processes
+    if os.name == 'nt':  # Windows
+        os.system('taskkill /f /im ngrok.exe 2>nul')
+    else:  # Unix/Linux
+        os.system('pkill ngrok 2>/dev/null')
+    
+    time.sleep(1)  # Wait for process to be killed
+    
+    # Verify ngrok is executable
+    try:
+        subprocess.run([NGROK_PATH, "version"], check=True, capture_output=True)
+    except Exception as e:
+        print(f"[!] Error: Cannot execute ngrok: {str(e)}")
+        return None, None
+
     ngrok_cmd = [NGROK_PATH, "http", str(port)]
     print(f"[+] Launching ngrok tunnel on port {port} ...")
     
     try:
-        # Kill any existing ngrok processes
-        if os.name == 'nt':  # Windows
-            os.system('taskkill /f /im ngrok.exe 2>nul')
-        else:  # Unix/Linux
-            os.system('pkill ngrok 2>/dev/null')
+        # Start ngrok with full output capture
+        ngrok_proc = subprocess.Popen(
+            ngrok_cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
         
-        time.sleep(1)  # Wait for process to be killed
-        
-        ngrok_proc = subprocess.Popen(ngrok_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         print("[+] Waiting for ngrok tunnel to initialize...")
         time.sleep(5)  # Give ngrok more time to start
 
+        # Check if process is still running
+        if ngrok_proc.poll() is not None:
+            stdout, stderr = ngrok_proc.communicate()
+            print(f"[!] Ngrok process failed to start!")
+            print(f"[!] Error output: {stderr}")
+            return None, None
+
         public_url = None
-        for _ in range(30):  # Increased wait time and attempts
+        for attempt in range(30):
             try:
-                resp = requests.get("http://127.0.0.1:4040/api/tunnels")
+                # Try to get the tunnel info
+                resp = requests.get("http://127.0.0.1:4040/api/tunnels", timeout=5)
                 if resp.status_code == 200:
                     tunnels = resp.json().get("tunnels", [])
                     for t in tunnels:
@@ -85,9 +107,10 @@ def start_ngrok(port):
                             break
                     if public_url:
                         break
-            except Exception as e:
-                print(f"[!] Waiting for ngrok... ({_+1}/30)")
-                time.sleep(1)
+                print(f"[!] Waiting for ngrok... ({attempt+1}/30)")
+            except requests.exceptions.RequestException as e:
+                print(f"[!] Connection attempt {attempt+1}/30 failed: {str(e)}")
+            time.sleep(1)
 
         if public_url:
             print(f"[+] Public ngrok URL: {public_url}")
