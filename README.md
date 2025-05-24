@@ -31,7 +31,7 @@ Use responsibly for authorized phishing simulations and user awareness training.
 Contributions and suggestions are welcome! Feel free to open issues or submit pull requests to improve this tool.
 
 # 📞 Contact
-For support or questions, reach out via GitHub issues or direct message.
+For support https://github.com/enisabazi2005 , https://github.com/Threadlinee or questions, reach out via direct message.
 
 📃 License
 This project is licensed under the MIT License.
