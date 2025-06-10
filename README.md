@@ -41,4 +41,4 @@ If you like this project, feel free to [buy me a coffee](https://ko-fi.com/G2G11
 
 [![Buy Me a Coffee](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/G2G114SBVV)
 
-Stay safe, stay ethical! 🚀🔒
+## Educational Purposes Only!! Stay safe, stay ethical. ✌️
